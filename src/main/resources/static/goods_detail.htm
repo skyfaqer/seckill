@@ -1,0 +1,256 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Goods detail</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <!-- jquery -->
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <!-- bootstrap -->
+    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css" />
+    <script type="text/javascript" src="/bootstrap/js/bootstrap.min.js"></script>
+    <!-- jquery-validator -->
+    <script type="text/javascript" src="/jquery-validation/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="/jquery-validation/localization/messages_zh.min.js"></script>
+    <!-- layer -->
+    <script type="text/javascript" src="/layer/layer.js"></script>
+    <!-- md5.js -->
+    <script type="text/javascript" src="/js/md5.min.js"></script>
+    <!-- common.js -->
+    <script type="text/javascript" src="/js/common.js"></script>
+    <style type="text/css">
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+        .panel-heading {
+            font-size: 17px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+<div class="panel panel-default">
+    <div class="panel-heading">Seckill Goods Detail</div>
+    <div class="panel-body">
+        <span id="userTip">You have not logged in, please log in first<br/></span>
+        <span></span>   <!--No address-->
+    </div>
+    <table class="table" id="goodslist">
+        <tr>
+            <td>Name</td>
+            <td colspan="3" id="goodsName"></td>
+        </tr>
+        <tr>
+            <td>Picture</td>
+            <td colspan="3"><img id="goodsImg" width="200" height="200" /></td>
+        </tr>
+        <tr>
+            <td style="border-bottom-style: none">Seckill Start Time</td>
+            <td style="border-bottom-style: none" id="startDate"></td>
+            <td rowspan="2">
+                <input type="hidden" id="remainSeconds" />
+                <span id="seckillTip"></span>
+            </td>
+            <td rowspan="2">
+        	    <!--<form id="seckillForm" method="post" action="/seckill/do_seckill">
+        		    <button class="btn btn-primary btn-block" type="submit" id="buyButton">Buy now</button>
+        		    <input type="hidden" name="goodsId" id="goodsId" />
+        	    </form>-->
+                <div class="row">
+                    <div class="form-inline">
+                        <img id="captchaImg" width="80" height="32" alt="Oops!" style="display: none" onclick="refreshCaptcha()" />
+                        <input id="captchaInput" class="form-control" style="display: none" />
+                        <button class="btn btn-primary" type="button" id="buyButton" onclick="getSeckillPath()">Buy now</button>
+                    </div>
+                </div>
+                <input type="hidden" name="goodsId" id="goodsId" />
+            </td>
+        </tr>
+        <tr>
+            <td style="border-top-style: none">Seckill End Time</td>
+            <td style="border-top-style: none" id="endDate"></td>
+        </tr>
+        <tr>
+            <td>Original Price</td>
+            <td colspan="3" id="goodsPrice"></td>
+        </tr>
+        <tr>
+            <td>Seckill Price</td>
+            <td colspan="3" id="seckillPrice"></td>
+        </tr>
+        <tr>
+            <td>Stock</td>
+            <td colspan="3" id="stockCount"></td>
+        </tr>
+    </table>
+</div>
+</body>
+<script>
+    $(function() {
+    	// countDown();
+        getDetail();
+    });
+
+    // Page store at client's end as static page
+    // Get goods detail every time client requests the page
+    function getDetail() {
+        var goodsId = g_getQueryString("goodsId");
+        $.ajax({
+            url: "/goods/to_detail/" + goodsId,
+            type: "GET",
+            success: function (data) {
+                if (parseInt(data.code) === 0) {
+                    render(data.data);
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            error: function () {
+                layer.msg("Client's request error");
+            }
+        });
+    }
+
+    // After getting goods detail, render the page
+    function render(detail) {
+        var goods = detail.goods;
+        var user = detail.user;
+        var seckillStatus = detail.seckillStatus;
+        var remainSeconds = detail.remainSeconds;
+        if (user) {
+            $("#userTip").hide();
+        }
+        $("#goodsName").text(goods.goodsName);
+        $("#goodsImg").attr("src", goods.goodsImg);
+        $("#startDate").text(new Date(goods.startDate).format("yyyy-MM-dd hh:mm:ss"));
+        $("#endDate").text(new Date(goods.endDate).format("yyyy-MM-dd hh:mm:ss"));
+        $("#remainSeconds").val(remainSeconds);
+        $("#goodsId").val(goods.id);
+        $("#goodsPrice").text(goods.goodsPrice);
+        $("#seckillPrice").text(goods.seckillPrice);
+        $("#stockCount").text(goods.stockCount);
+        countDown();
+    }
+
+    function countDown(){
+    	var remainSeconds = parseInt($("#remainSeconds").val());
+    	var timeout;
+    	if (remainSeconds > 0) {  // Seckill not started, need countdown
+    		$("#buyButton").attr("disabled", true);
+            $("#seckillTip").html("Seckill starts in: " + remainSeconds + " sec");
+    		timeout = setTimeout(function() {
+    			$("#countDown").text(remainSeconds - 1);
+    			$("#remainSeconds").val(remainSeconds - 1);
+    			countDown();
+    		}, 1000);
+    	} else if (remainSeconds === 0){    // Seckill in progress
+    		$("#buyButton").attr("disabled", false);
+    		$("#seckillTip").html("Seckill in progress");
+    		if (timeout) {
+    			clearTimeout(timeout);
+    		}
+            $("#captchaImg").attr("src", "/seckill/captcha?goodsId=" + $("#goodsId").val());
+    		$("#captchaImg").show();
+    		$("#captchaInput").show();
+    	} else {    // Seckill ended
+    		$("#buyButton").attr("disabled", true);
+            $("#seckillTip").html("Seckill has ended");
+            $("#captchaImg").hide();
+            $("#captchaInput").hide();
+    	}
+    }
+
+    function refreshCaptcha() {
+        $("#captchaImg").attr("src", "/seckill/captcha?goodsId=" + $("#goodsId").val() + "&timestamp=" + new Date().getTime());
+    }
+
+    // Hide the real seckill url to avoid large amount of malicious accesses (combined with captcha)
+    // Request server to generate a random path first, then use this path to request /do_seckill
+    function getSeckillPath() {
+        var goodsId = $("#goodsId").val();
+        $.ajax({
+            url: "/seckill/path",
+            type: "GET",
+            data: {
+                goodsId: goodsId,
+                captchaInput: $("#captchaInput").val()
+            },
+            success: function (data) {
+                if (parseInt(data.code) === 0) {
+                    var path = data.data;
+                    doSeckill(path);
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            error: function () {
+                layer.msg("Client's request error");
+            }
+        });
+    }
+
+    function doSeckill(path) {
+        $.ajax({
+            url: "/seckill/" + path + "/do_seckill",
+            type: "POST",
+            data: {
+                goodsId: $("#goodsId").val()
+            },
+            success: function (data) {
+                if (parseInt(data.code) === 0) {
+                    // window.location.href = "/order_detail.htm?orderId=" + data.data.id;
+                    getSeckillResult($("#goodsId").val(), true);
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            error: function () {
+                layer.msg("Client's request error");
+            }
+        });
+    }
+    
+    function getSeckillResult(goodsId, showLoading) {
+        if (showLoading) {
+            g_showLoading();
+        }
+        $.ajax({
+            url: "/seckill/result",
+            type: "GET",
+            data: {
+                goodsId: goodsId
+            },
+            success: function (data) {
+                if (parseInt(data.code) === 0) {
+                    var result = parseInt(data.data);
+                    if (result === -1) {
+                        layer.msg("Oops! This item has been sold out. Be quicker next time!");
+                    } else if (result === -2) {
+                        layer.msg("Seckill has ended! Be quicker next time!");
+                    } else if (result === -3) {
+                        layer.msg("Goods not exist.");
+                    } else if (result === 0) {
+                        // Query result again
+                        setTimeout(function () {
+                            getSeckillResult(goodsId, false);
+                        }, 200);
+                    } else {
+                        layer.confirm("Seckill success! View order?", {btn: ["Yes", "No"]},
+                        function () {
+                            window.location.href = "/order_detail.htm?orderId=" + result;
+                        },
+                        function () {
+                            layer.closeAll();
+                        });
+                    }
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            error: function () {
+                layer.msg("Client's request error");
+            }
+        });
+    }
+</script>
+</html>

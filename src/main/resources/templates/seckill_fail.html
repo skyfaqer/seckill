@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Seckill failed</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style>
+        body {
+            text-align: center;
+        }
+        .msg {
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 120px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+<div class="msg">
+    Seckill failed：<p th:text="${errorMsg}"></p>
+</div>
+</body>
+</html>

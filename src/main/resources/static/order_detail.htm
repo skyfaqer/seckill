@@ -1,0 +1,123 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Order detail</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <!-- jquery -->
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <!-- bootstrap -->
+    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css" />
+    <script type="text/javascript" src="/bootstrap/js/bootstrap.min.js"></script>
+    <!-- jquery-validator -->
+    <script type="text/javascript" src="/jquery-validation/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="/jquery-validation/localization/messages_zh.min.js"></script>
+    <!-- layer -->
+    <script type="text/javascript" src="/layer/layer.js"></script>
+    <!-- md5.js -->
+    <script type="text/javascript" src="/js/md5.min.js"></script>
+    <!-- common.js -->
+    <script type="text/javascript" src="/js/common.js"></script>
+</head>
+<body>
+<div class="panel panel-default">
+    <div class="panel-heading">Seckill Order Detail</div>
+    <table class="table" id="goodslist">
+        <tr>
+            <td>Item Name</td>
+            <td id="goodsName" colspan="3"></td>
+        </tr>
+        <tr>
+            <td>Picture</td>
+            <td colspan="2"><img id="goodsImg" width="200" height="200" /></td>
+        </tr>
+        <tr>
+            <td>Price</td>
+            <td colspan="2" id="goodsPrice"></td>
+        </tr>
+        <tr>
+            <td>Order Time</td>
+            <td id="createDate" colspan="2"></td>
+        </tr>
+        <tr>
+       	    <td>Order Status</td>
+            <td id="orderStatus">
+          	    <!--<span if="${orderInfo.status eq 0}">Unpaid</span>
+          	    <span if="${orderInfo.status eq 1}">Ready for delivery</span>
+          	    <span if="${orderInfo.status eq 2}">In delivery</span>
+          	    <span if="${orderInfo.status eq 3}">Signed for</span>
+          	    <span if="${orderInfo.status eq 4}">Refunded</span>
+          	    <span if="${orderInfo.status eq 5}">Finished</span>-->
+            </td>
+            <td>
+          	    <button class="btn btn-primary btn-block" type="submit" id="payButton">Pay Now</button>
+            </td>
+        </tr>
+        <tr>
+            <td>Receiver</td>
+            <td colspan="2" id="userId"></td>
+            <!--<td colspan="2" text="'XXX ' + ${orderInfo.userId}"></td>-->
+        </tr>
+        <tr>
+            <td>Address</td>
+            <td colspan="2" id="deliveryAddrId"></td>
+            <!--<td colspan="2" text="'Addr ' + ${orderInfo.deliveryAddrId}"></td>-->
+        </tr>
+    </table>
+</div>
+</body>
+</html>
+<script>
+    $(function () {
+        getOrderDetail();
+    });
+
+    function getOrderDetail() {
+        var orderId = g_getQueryString("orderId");
+        $.ajax({
+            url: "/order/detail",
+            type: "GET",
+            data: {
+                orderId: orderId
+            },
+            success: function (data) {
+                if (parseInt(data.code) === 0) {
+                    render(data.data);
+                } else {
+                    layer.msg(data.msg);
+                }
+            },
+            error: function () {
+                layer.msg("Client's request error");
+            }
+        });
+    }
+
+    function render(detail) {
+        var goods = detail.goods;
+        var order = detail.order;
+        $("#goodsName").text(goods.goodsName);
+        $("#goodsImg").attr("src", goods.goodsImg);
+        $("#goodsPrice").text(order.goodsPrice);
+        $("#createDate").text(new Date(order.createDate).format("yyyy-MM-dd hh:mm:ss"));
+        var status = "";
+        var s = parseInt(order.status);
+        if (s === 0) {
+            status = "Unpaid";
+        } else if (s === 1) {
+            status = "Ready for delivery";
+        } else if (s === 2) {
+            status = "In delivery";
+        } else if (s === 3) {
+            status = "Signed for";
+        } else if (s === 4) {
+            status = "Refunded";
+        } else if (s === 5) {
+            status = "Finished";
+        } else {
+            status = "Unknown";
+        }
+        $("#orderStatus").text(status);
+        $("#userId").text("XXX " + order.userId);
+        $("#deliveryAddrId").text("Addr " + order.deliveryAddrId);
+    }
+</script>
