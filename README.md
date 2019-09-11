@@ -1,6 +1,6 @@
 # Seckill
 
-### A solution of high concurrency in online-shopping web application
+### A solution to high concurrency in online-shopping web application
 
 In China, large online-shopping websites (e.g. www.taobao.com, www.jd.com) hold events of sales promotion every year during which many products are sold at very low prices. This kind of event is called **Seckill** (Second kill, 秒杀).
 
